@@ -1,0 +1,187 @@
+package com.rapidminer.operator.preprocessing.transformation;
+
+import java.sql.*;
+import java.util.*;
+import java.io.*;
+
+import com.rapidminer.example.table.DataRow;
+import com.rapidminer.example.table.DatabaseDataRow;
+import com.rapidminer.example.table.DatabaseExampleTable;
+import com.rapidminer.example.table.ExampleTable;
+import com.rapidminer.operator.Operator;
+import com.rapidminer.operator.OperatorDescription;
+import com.rapidminer.operator.OperatorException;
+import com.rapidminer.operator.io.ExcelExampleSource;
+import com.rapidminer.operator.ports.InputPort;
+import com.rapidminer.operator.ports.OutputPort;
+import com.rapidminer.tools.LogService;
+import com.rapidminer.tools.jdbc.DatabaseHandler;
+import com.rapidminer.example.Attribute;
+import com.rapidminer.example.ExampleSet;
+
+
+public class readDatabase extends Operator{
+	
+		//initialises the input and output ports for the operators
+	private InputPort exampleSetInput = getInputPorts().createPort("example set");
+	private OutputPort exampleSetOutput = getOutputPorts().createPort("exampleset");
+	private static Attribute attribute;
+
+	//constructor for the class
+	public readDatabase(OperatorDescription description) {
+		super(description);
+		// TODO Auto-generated constructor stub
+	}
+	
+	//introduces the jdbc driver and the database url
+	final static String JDBC_DRIVER = "";
+	final static String DB_URL = "";
+	
+	//initialises the username and password
+	final static String USER = "user";
+	final static String PASS = "pass";
+	
+	//initialises the connection and the statement
+	static int index = addAttributes(attribute);
+	static Connection conn = null;
+	static Statement stmt = null;
+	List<String> queryHeaders = null;
+	List<String> queryRows = null;
+	static ResultSet rs = null;
+	static DatabaseHandler dataBaseHandler;
+	static List<Attribute> attributes;
+	//string tblName="output";
+	
+	//amethod to connect to the database
+	public static void DBconnect(){
+		try{
+			Class.forName(JDBC_DRIVER);
+			System.out.println("Attempting to connetc to the database");
+			conn = DriverManager.getConnection(DB_URL, USER, PASS);
+			System.out.println("Connected Successfully");
+		
+		} catch (ClassNotFoundException | SQLException e) {
+			//TODO Auto-Generated catch block
+			e.printStackTrace();
+			System.out.println("Connection Failed");
+		}
+	}
+		
+	//a methods to close the connection 
+	public static void DBconnectionClose() throws SQLException{
+			conn.close();
+	}
+		
+	//a method to execute the sql query
+	public static ResultSet executeQuery(){
+		System.out.println("running query");
+		try{ 
+			stmt = conn.createStatement();
+			String sql1 = "DROP TABLE IF EXISTS java_test_1;";
+			String sql2 = "CREATE TABLE java_test_1 AS" + 
+						"SELECT * FROM party limit 5";
+			String sql3 = "SELECT * FROM java_test_1";
+				
+			//Drop table
+			stmt.executeUpdate(sql1);
+			//Create table 
+			stmt.executeUpdate(sql2);
+			//GetResults 
+			rs = stmt.executeQuery(sql3);
+		} catch (SQLException e) {
+			//TODO auto-generate catch block 
+			e.printStackTrace();
+			System.out.println("Query Failed to Execute");
+			}
+			return rs;
+		};
+		
+		//a method to create the Example table within Rapidminer
+		public static DatabaseExampleTable createTable(DatabaseHandler dataBaseHandler, String tableName) throws SQLException{
+			Statement statement = stmt;
+			ResultSet rs = executeQuery();
+			List<Attribute> attributes = dataBaseHandler.createAttributes(rs);
+			//rs.close();
+			//statement.close();
+			attributes = dataBaseHandler.createAttributes(rs);
+			return null;
+			
+		}
+		
+		public static DatabaseExampleTable createDatabaseExampleTable(){
+			DatabaseExampleTable table = null;
+			try{
+				table = createTable(dataBaseHandler, "output");
+				if(table == null){
+					System.out.println("table is empty");
+				} 
+			}catch (SQLException e){
+				// TODO Auto generated catch block
+				e.printStackTrace();
+			}
+			return table;
+			}
+		
+		public static DataRow getDataRow(int index){
+			try{
+				rs.absolute(index+1);
+				DatabaseDataRow dataRow = new DatabaseDataRow(rs);
+				return dataRow;
+			}catch(SQLException e){
+				
+			}
+			return null;
+		}
+	
+		//a method to add attributes
+		public static int addAttributes(Attribute attribute){
+			if(dataBaseHandler==null){
+				return index;
+			}
+			try{
+				//close();
+				dataBaseHandler.addColumn(attribute, "user");
+				//resetResultSet();
+			}catch(SQLException e){
+				System.out.println("Error Adding Column");
+			}
+			return index;
+		}
+
+		@Override
+		public void doWork() throws OperatorException{
+			try{
+				System.out.println("Making example table");
+				ExampleTable et = createTable(dataBaseHandler, "user");
+				ExampleSet es = et.createExampleSet();
+				DBconnectionClose();
+				getDataRow(index);
+				addAttributes(attribute);
+				System.out.println("done");
+				exampleSetOutput.deliver(es);
+			}catch(SQLException e){
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+	}
+		public static void main(String[] args){
+			DBconnect();
+			
+			try{
+				System.out.println("Making ExampleTable");
+				createTable(dataBaseHandler, "user");
+				DBconnectionClose();
+				getDataRow(index);
+				addAttributes(attribute);
+				System.out.println("done");
+			} catch (SQLException e) {
+				//TODO Auto-generate catch block
+				e.printStackTrace();
+			}
+			
+			//DBconnectionClose();
+		}
+	
+
+}

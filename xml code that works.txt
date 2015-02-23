@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<operators name="tutorial" version="5.0" docbundle="com/rapidminer/resources/i18n/OperatorsDocTutorial">
+            <group key="import">
+            <group key="data">
+               <operator>
+                  <key>readDatabase</key>
+                  <class>com.rapidminer.operator.preprocessing.transformation.readDatabase
+                  </class>
+               </operator>
+            </group>
+         </group>
+      </group>
+   </group>
+</operators>
